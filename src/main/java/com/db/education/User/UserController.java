@@ -120,7 +120,7 @@ public class UserController {
     }
 
     @GetMapping("/current")
-    @PreAuthorize("hasAnyRole('USER')")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public User getCurrentUserInfo() throws Exception {
         return userService.getCurrentUser();
 
