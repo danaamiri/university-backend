@@ -4,6 +4,7 @@ import com.db.education.Course.entity.CourseTime;
 import com.db.education.Course.entity.SemesterCourse;
 import com.db.education.Course.entity.StudentCourse;
 import com.db.education.Course.messages.RegisterCourseRequest;
+import com.db.education.Course.messages.ScheduleModel;
 import com.db.education.Course.repository.CourseTimeRepository;
 import com.db.education.Course.service.CourseService;
 import com.db.education.Semester.entity.Semester;
@@ -49,9 +50,14 @@ public class SemesterController {
 
     }
 
-    @GetMapping("/schedule/{id}")
-    public List<SemesterCourseTimeReponse> getWeeklySchedule(@PathVariable("id") Long id) {
-        return courseService.getCurrentUserSemesterWeeklySchedule(id);
+    @GetMapping("/schedule")
+    public List<ScheduleModel> getWeeklySchedule() {
+        return courseService.getSchdule(courseService.getCurrentUserSemesterWeeklySchedule(semesterService.getCurrentSemesterId()));
+    }
+
+    @GetMapping("/registered")
+    public List<RegisterCourseRequest> getRegistered() {
+        return courseService.getRegisteredCourse();
     }
 
 

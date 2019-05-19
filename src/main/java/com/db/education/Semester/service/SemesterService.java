@@ -32,7 +32,7 @@ public class SemesterService {
 
         return userSemesters;
     }
-    private Long getCurrentSemesterId() {
+    public Long getCurrentSemesterId() {
         return semesterRepository.getCurrentSemester();
     }
 }

@@ -63,4 +63,12 @@ public class Semester implements Serializable {
     public void setEndSemester(Timestamp endSemester) {
         this.endSemester = endSemester;
     }
+
+    public int getYearHalf() {
+        return yearHalf;
+    }
+
+    public void setYearHalf(int yearHalf) {
+        this.yearHalf = yearHalf;
+    }
 }
