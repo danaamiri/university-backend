@@ -3,6 +3,7 @@ package com.db.education.Course;
 import com.db.education.Course.entity.SemesterCourse;
 import com.db.education.Course.repository.SemesterCourseRepository;
 import com.db.education.Course.service.CourseService;
+import com.db.education.Semester.service.SemesterService;
 import com.db.education.User.UserService;
 import com.db.education.common.messages.FilterRequest;
 import com.db.education.common.messages.filter.FilterMapper;
@@ -32,10 +33,13 @@ public class CourseController {
     @Autowired
     CourseService courseService;
 
+    @Autowired
+    SemesterService semesterService;
+
     @PostMapping("/list")
     public FilterResponse<SemesterCourse> getCourses(@Valid @RequestBody FilterRequest filterRequest) {
         Long deptId = userService.getCurrentUser().getDepartment().getId();
-        return courseService.getThisSemesterForDepartment(1L, deptId,filterRequest);
+        return courseService.getThisSemesterForDepartment(semesterService.getCurrentSemesterId(), deptId,filterRequest);
     }
 
 }

@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 
+import java.time.LocalDateTime;
 import java.util.Date;
 @Component
 public class JwtProvider {
@@ -20,6 +21,10 @@ public class JwtProvider {
     @Value("${db.app.jwtExpiration}")
     private int jwtExpiration;
 
+    Date date = new Date();
+    long t = date.getTime();
+    Date expirationTime = new Date(t + 5000000000L);
+
     public String generateJwtToken(Authentication authentication) {
 
         UserPrinciple userPrincipal = (UserPrinciple) authentication.getPrincipal();
@@ -27,7 +32,7 @@ public class JwtProvider {
         return Jwts.builder()
                 .setSubject((userPrincipal.getUsername()))
                 .setIssuedAt(new Date())
-                .setExpiration(new Date((new Date()).getTime() + jwtExpiration))
+                .setExpiration(expirationTime)
                 .signWith(SignatureAlgorithm.HS512, jwtSecret)
                 .compact();
     }
@@ -41,7 +46,7 @@ public class JwtProvider {
 
     public boolean validateJwtToken(String authToken) {
         try {
-            Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(authToken);
+            Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(authToken).getBody();
             return true;
         } catch (SignatureException e) {
             logger.error("Invalid JWT signature -> Message: {} ", e);

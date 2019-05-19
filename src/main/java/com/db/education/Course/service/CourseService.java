@@ -4,6 +4,7 @@ import com.db.education.Course.entity.CourseTime;
 import com.db.education.Course.entity.SemesterCourse;
 import com.db.education.Course.entity.StudentCourse;
 import com.db.education.Course.messages.RegisterCourseRequest;
+import com.db.education.Course.messages.ScheduleModel;
 import com.db.education.Course.repository.CourseTimeRepository;
 import com.db.education.Course.repository.SemesterCourseRepository;
 import com.db.education.Course.repository.StudentCourseRepository;
@@ -19,9 +20,11 @@ import com.db.education.common.paging.Paginator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class CourseService {
@@ -111,28 +114,29 @@ public class CourseService {
         return registerCourseRequests;
     }
 
+    @Transactional
     public void saveCourseTime(List<RegisterCourseRequest> registerCourseRequests) {
         User user = userService.getCurrentUser();
-        StudentCourse tStudentCourse = new StudentCourse();
+        List<StudentCourse> studentCoursesList = new ArrayList<>();
         registerCourseRequests.iterator().forEachRemaining(courseTime -> {
             if (courseTime.isStatus()) {
                 Optional<StudentCourse> tempStudentCourse = studentCourseRepository.findByUser_idAndSemesterCourse_Id(user.getId(), courseTime.getCourseId());
                 if (!tempStudentCourse.isPresent()) {
+                    StudentCourse tStudentCourse = new StudentCourse();
                     tStudentCourse.setSemesterCourse(semesterCourseRepository.getOne(courseTime.getCourseId()));
                     tStudentCourse.setUser(user);
-                    studentCourseRepository.save(tStudentCourse);
+                    studentCoursesList.add(tStudentCourse);
                 }
 
             } else {
                 Optional<StudentCourse> tempStudentCourse = studentCourseRepository.findByUser_idAndSemesterCourse_Id(user.getId(), courseTime.getCourseId());
                 if (tempStudentCourse.isPresent()) {
                     studentCourseRepository.deleteById(tempStudentCourse.get().getId());
-                } else {
-                    registerCourseRequests.remove(courseTime);
                 }
             }
 
         });
+        studentCourseRepository.saveAll(studentCoursesList);
     }
 
     public List<SemesterCourseTimeReponse> getCurrentUserSemesterWeeklySchedule(Long semesterId) {
@@ -140,14 +144,81 @@ public class CourseService {
         List<StudentCourse> studentCourses = studentCourseRepository.findAllByUser_Id(user.getId());
         List<SemesterCourseTimeReponse> weeklySchedule = new ArrayList<>();
         studentCourses.iterator().forEachRemaining(x -> {
-
-            x.getSemesterCourse().getTime().iterator().forEachRemaining(time->{
-                SemesterCourseTimeReponse tempSCT = new SemesterCourseTimeReponse(time, x.getSemesterCourse());
-                weeklySchedule.add(tempSCT);
-            });
+            if (x.getSemesterCourse().getSemester().getId() == semesterId) {
+                x.getSemesterCourse().getTime().iterator().forEachRemaining(time -> {
+                    SemesterCourseTimeReponse tempSCT = new SemesterCourseTimeReponse(time, x.getSemesterCourse());
+                    weeklySchedule.add(tempSCT);
+                });
+            }
         });
 
         return weeklySchedule;
 
+
     }
+
+    public List<ScheduleModel> getSchdule(List<SemesterCourseTimeReponse> semesterCourseTimeReponses) {
+        List<ScheduleModel> scheduleModels = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            int finalI = i;
+            ScheduleModel scheduleModel = new ScheduleModel();
+            switch (finalI) {
+                case 0:
+                    scheduleModel.setWeekday("Saturday");
+                    break;
+                case 1:
+                    scheduleModel.setWeekday("Sunday");
+                    break;
+                case 2:
+                    scheduleModel.setWeekday("Monday");
+                    break;
+                case 3:
+                    scheduleModel.setWeekday("Tuesday");
+                    break;
+            }
+            semesterCourseTimeReponses.iterator().forEachRemaining(sctr -> {
+                if (sctr.getTime().getDay() == finalI) {
+                    Time time = sctr.getTime();
+                    switch (time.getStartTime().toLocalTime().getHour() + 1) {
+                        case 8:
+                            scheduleModel.setFirstTime(sctr.getSemesterCourse());
+                            break;
+                        case 10:
+                            scheduleModel.setSecondTime(sctr.getSemesterCourse());
+                            break;
+                        case 14:
+                            scheduleModel.setThirdTime(sctr.getSemesterCourse());
+                            break;
+                        case 16:
+                            scheduleModel.setForthTime(sctr.getSemesterCourse());
+                            break;
+                    }
+                }
+            });
+            scheduleModels.add(scheduleModel);
+        }
+        return scheduleModels;
+    }
+
+    public List<RegisterCourseRequest> getRegisteredCourse() {
+        User user = userService.getCurrentUser();
+        List<RegisterCourseRequest> studentCourses = new ArrayList<>();
+        List<StudentCourse> serverStudentCourse = studentCourseRepository.findAllByUser_Id(user.getId());
+        serverStudentCourse.iterator().forEachRemaining(x -> {
+            if(x.getMark() == null){
+                RegisterCourseRequest registerCourseRequest = new RegisterCourseRequest();
+                registerCourseRequest.setError("");
+                registerCourseRequest.setCourseId(x.getSemesterCourse().getId());
+                registerCourseRequest.setStatus(true);
+                registerCourseRequest.setName(x.getSemesterCourse().getCourse().getName());
+                registerCourseRequest.setTime(x.getSemesterCourse().getTime());
+                studentCourses.add(registerCourseRequest);
+            }
+        });
+
+        return studentCourses;
+
+    }
+
+
 }
